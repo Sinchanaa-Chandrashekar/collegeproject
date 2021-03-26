@@ -1,6 +1,7 @@
 from PyQt5 import QtWidgets as qt, QtCore as qc, QtGui as qg
 from sys import argv, exit
-import api, Untitled
+import api, ML_backend
+import pyqtspinner as ps
 
 
 class MainWindow(qt.QMainWindow):
@@ -13,20 +14,26 @@ class MainWindow(qt.QMainWindow):
         self.linedit.text()
         self.linedit.setFocus()
         self.linedit.setEnabled(True)
-        self.linedit.setFixedWidth(500)
-        self.linedit.setPlaceholderText('Enter your Url here andd press Enter.')
+        self.linedit.setFixedWidth(700)
         font = qg.QFont()
-        font.setPixelSize(20)
+        font.setPixelSize(16)
         font.setFamily('Open sans')
         self.linedit.setFont(font)
+        self.prompt = qt.QLabel('Enter your Url here and press Enter.')
+        self.prompt.setFont(font)
+        self.loading_label = qt.QLabel('Loading..')
+        self.loading_label.hide()
         self.label = qt.QLabel()
         pic = qg.QPixmap('./assets/phishing-detection.png')
         self.label.setPixmap(pic)
         self.label.setObjectName('image')
         self.table = qt.QTableWidget()
         self.table.hide()
-        self.hlayout.addWidget(self.label, 1, qc.Qt.AlignCenter)
+        self.spinbox = ps.QtWaitingSpinner(self, True, True, qg.Qt.Application)
+        self.hlayout.addWidget(self.label, 1, qc.Qt.AlignCenter | qc.Qt.AlignTop)
+        self.hlayout.addWidget(self.prompt, 1, qc.Qt.AlignCenter)
         self.hlayout.addWidget(self.linedit, 5, qc.Qt.AlignCenter | qc.Qt.AlignTop)
+        self.hlayout.addWidget(self.loading_label, 1, qc.Qt.AlignCenter)
         self.hlayout.addWidget(self.table, 10)
         self.widget.setLayout(self.hlayout)
         self.setCentralWidget(self.widget)
@@ -49,11 +56,10 @@ class MainWindow(qt.QMainWindow):
         if url == "":
             self.linedit.setPlaceholderText('Please Enter a URL.')
         else:
-            value = Untitled.callabale_info(url, [])
+            self.loading_label.show()
+            value = ML_backend.callabale_info(url, [])
             new = value[0][0]
-            feature_names = ['Domain', 'Have_IP', 'Have_At', 'URL_Length', 'URL_Depth','Redirection',
-                        'https_Domain', 'TinyURL', 'Prefix/Suffix', 'DNS_Record', 'Web_Traffic',
-                        'Domain_Age', 'Domain_End', 'iFrame', 'Mouse_Over','Right_Click', 'Web_Forwards', 'Label']
+            feature_names = value[2]
             self.table.setColumnCount(feature_names.__len__())              
             self.table.setRowCount(1)
             self.table.setHorizontalHeaderLabels(feature_names)
@@ -61,7 +67,8 @@ class MainWindow(qt.QMainWindow):
             for i in range(0, feature_names.__len__()):
                 tablewidgetitem = qt.QTableWidgetItem(str(new[i]))
                 self.table.setItem(0, i, tablewidgetitem)
-                self.table.show()
+            self.table.show()
+            self.loading_label.hide()
             self.messagedialog.setText(value[1])
             self.messagedialog.show()
 
